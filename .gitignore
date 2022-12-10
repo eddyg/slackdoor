@@ -1,0 +1,13 @@
+.DS_Store
+.python-version
+.env
+.venv/
+.local/
+.ruff_cache/
+*.tar
+*.out
+*.log
+*.pyc
+__pycache__/
+/local
+/dist
