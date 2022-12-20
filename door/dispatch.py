@@ -207,7 +207,7 @@ class EventDispatcher:
         set_user({"id": context.user_id})
         set_tag("channel", context.channel_id)
 
-        if event and context.user_id is None and event.get("type") not in ["file_deleted"]:
+        if event and context.user_id is None and event.get("type") not in ("channel_created", "channel_rename", "file_deleted"):
             with start_transaction(op="event", name=event.get("type")):
                 with start_span(op="debug", description="context missing user_id") as span:
                     span.set_data("event", event)
