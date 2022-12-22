@@ -72,7 +72,9 @@ def adjust_start(ts: str | int | float, transaction: Span) -> None:
     except ValueError:
         return
 
-    transaction.start_timestamp = datetime.utcfromtimestamp(ts)
+    # The Sentry SDK doesn't use offset-aware datetimes, so can't use
+    # datetime.fromtimestamp(ts, pytz.utc), so need to suppress DTZ004
+    transaction.start_timestamp = datetime.utcfromtimestamp(ts)  # noqa: DTZ004
     # since the monotonic timer starts at 0 when the app starts, deal with older events
     transaction._start_timestamp_monotonic = max(time.perf_counter() - (time.time() - ts), 0)
 

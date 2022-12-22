@@ -51,7 +51,7 @@ def find_shortest_indent(text: str | list[str], *, ignore_empty: bool = True, de
 
 
 def now_utc() -> datetime:
-    return pytz.utc.localize(datetime.utcnow())
+    return datetime.now(tz=pytz.utc)
 
 
 def relative_date(the_time: int | float | str | datetime) -> str:
