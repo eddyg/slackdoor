@@ -8,7 +8,7 @@ packages = [
     {include = "door"}
 ]
 
-version = "0.6.3"
+version = "0.6.4"
 # NOTE: uses the 'poetry_bumpversion' plugin to keep versions in sync
 # Use:
 #   poetry version {patch|minor|major|prepatch|preminor|premajor|prerelease}
