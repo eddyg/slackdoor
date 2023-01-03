@@ -175,8 +175,8 @@ class Slack(metaclass=Singleton):
                                         for channel in channels:
                                             self._parse_channel_object(channel)
                                     else:
-                                        self._logger.error("conversations.list: API response did not include 'channels' object")
                                         span.set_status("internal_error")
+                                        self._logger.error("conversations.list: API response did not include 'channels' object")
                                         break
                                 else:
                                     span.set_status("ok")
@@ -258,6 +258,7 @@ class Slack(metaclass=Singleton):
                 api_response = await self.client.users_info(user=user_id)
             except SlackApiError as err:
                 span.set_status("internal_error")
+                span.set_data("user_id", user_id)
                 self.logger.error(f"users.info: {err.response}", exc_info=True)
                 return User()
 
@@ -322,13 +323,14 @@ class Slack(metaclass=Singleton):
                             members.extend([u for u in members_obj if not self._users.get(u, User()).is_bot])
                         else:
                             span.set_status("internal_error")
-                            span.set_data("member_obj", members_obj)
+                            span.set_data("data", {"channel_id": channel_id, "members_obj": members_obj})
                             self._logger.error("conversations.members: API response did not include 'members' object")
                             break
                     else:
                         span.set_status("ok")
             except SlackApiError as err:
                 span.set_status("internal_error")
+                span.set_data("channel_id", channel_id)
                 self.logger.error(f"conversations.members: {err.response}", exc_info=True)
                 return None
 
@@ -359,8 +361,14 @@ class Slack(metaclass=Singleton):
                     # we don't ask for the number of members because we may ask for the actual member list
                     api_response = await self.client.conversations_info(channel=channel_id, include_num_members=False)
                 except SlackApiError as err:
-                    span.set_status("internal_error")
-                    self.logger.error(f"conversations.info: {err.response}", exc_info=True)
+                    span.set_data("channel_id", channel_id)
+                    if err.response.get("error", "") == "channel_not_found":
+                        # trying to call conversations.info on something like a "direct message"
+                        # results in "channel_not_found", so not really an error?
+                        span.set_status("not_found")
+                    else:
+                        span.set_status("internal_error")
+                        self.logger.error(f"conversations.info: {err.response}", exc_info=True)
                     return Channel()
 
                 if not (channel_obj := api_response.get("channel")):
