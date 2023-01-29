@@ -505,7 +505,7 @@ class EventDispatcher:
                 with start_span(op="slack-api", description=api_call) as span:
                     if context["conditional_thread_ts"] and "thread_ts" not in message_as_dict:
                         span.set_data("message_as_dict", message_as_dict)
-                        logger.warning("Response of type Message didn't include 'thread_ts'")
+                        logger.warning("Message response in a thread didn't include 'thread_ts'")
                         message_as_dict["thread_ts"] = ts
                     logger.debug("chat.postMessage called with %s", message_as_dict)
                     api_response = await say(**message_as_dict)
