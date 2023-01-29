@@ -49,3 +49,12 @@ async def generic_dismiss_message_button(ack: AsyncAck, respond: AsyncRespond, l
                 logger.error(f"respond: {err.response}", exc_info=True)
             else:
                 span.set_status("ok")
+
+
+# NOTE: the handler for this action is registered in dispatch:start()
+async def ack_open_url_button(ack: AsyncAck, respond: AsyncRespond, logger: Logger) -> None:
+    with start_transaction(op="event", name="ack_open_url_button") as txn:
+        # NOTE: URL buttons still need to be acknowledged
+        await ack()
+
+        txn.set_status("ok")

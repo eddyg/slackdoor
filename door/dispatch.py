@@ -17,7 +17,7 @@ from slack_sdk.errors import SlackApiError
 from slack_sdk.web.async_client import AsyncWebClient
 
 from door.plugins import PluginHandler
-from door.utils.interactive import ephemeral_notification, generic_dismiss_message_button
+from door.utils.interactive import ephemeral_notification, generic_dismiss_message_button, ack_open_url_button
 from door.models.files.file import File
 from door.models.messages.message import Message, MultiMessage
 from door.sentry import adjust_start
@@ -105,8 +105,9 @@ class EventDispatcher:
         # self.slack._process_member_joined_channel is called directly from _dispatch_member_joined_channel
         self.app.event("member_joined_channel")(self._dispatch_member_joined_channel)
 
-        # register a generic "dismiss button" action handler for convenience
+        # register a couple actio handlers for convenience
         self.app.action("generic_dismiss_message_button")(generic_dismiss_message_button)
+        self.app.action("ack_open_url_button")(ack_open_url_button)
 
         # Finally register any events the plugins want
         for event_type, handler in self._plugin_events.items():
