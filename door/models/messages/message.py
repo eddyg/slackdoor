@@ -1,7 +1,8 @@
 import logging
 
 from json import dumps
-from typing import Any, Sequence
+from typing import Any
+from collections.abc import Sequence
 from urllib.parse import quote
 
 from slack_bolt.context.async_context import AsyncBoltContext
@@ -134,9 +135,8 @@ class Message(JsonObject):
 
     def to_dict(self) -> dict:
         json = super().to_dict()
-        if self.text:
-            if len(self.text) > 40000:
-                logger.error("Message over 40,000 characters (will be truncated by Slack)")
+        if self.text and len(self.text) > 40000:
+            logger.error("Message over 40,000 characters (will be truncated by Slack)")
         if self.parse is False:
             # "full" (which we refer to as True) is the default, so don't set unless it's False
             json["parse"] = "none"
