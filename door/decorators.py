@@ -4,7 +4,9 @@ import re
 
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Any, Callable, Pattern
+from typing import Any
+from re import Pattern
+from collections.abc import Callable
 
 
 @dataclass(slots=True)

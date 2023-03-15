@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Pattern
+from typing import Any
+from re import Pattern
+from collections.abc import Awaitable, Callable
 
 from door.plugins.base import DoorBasePlugin
 

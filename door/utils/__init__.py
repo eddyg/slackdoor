@@ -4,7 +4,8 @@ import re
 from datetime import datetime
 from logging import Logger, Handler
 from types import TracebackType
-from typing import Any, Iterable
+from typing import Any
+from collections.abc import Iterable
 
 
 # from https://stackoverflow.com/q/6760685/2789834
@@ -29,7 +30,7 @@ def find_shortest_indent(text: str | list[str], *, ignore_empty: bool = True, de
     indent_sizes = []
 
     for line in text:
-        if ignore_empty and line.strip() == "":
+        if ignore_empty and not line.strip():
             continue
 
         count = 0
@@ -59,7 +60,7 @@ def relative_date(the_time: int | float | str | datetime) -> str:
         return ""
 
     # convert the_time to a datetime object if it's just a bare "epoch" int / float
-    if isinstance(the_time, (int, float)):
+    if isinstance(the_time, int | float):
         when = datetime.fromtimestamp(float(the_time), pytz.utc)
     elif isinstance(the_time, str):
         when = datetime.fromisoformat(the_time)

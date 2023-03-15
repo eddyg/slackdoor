@@ -4,7 +4,9 @@ import re
 
 from dataclasses import dataclass
 from logging import Logger
-from typing import Any, Awaitable, Callable, Mapping, Match, Sequence, NamedTuple
+from typing import Any, NamedTuple
+from re import Match
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 
 from case_insensitive_dict import CaseInsensitiveDict
 
@@ -319,7 +321,7 @@ class EventDispatcher:
 
         return text, codeblocks, backticks
 
-    async def _process_message_handlers(
+    async def _process_message_handlers(  # noqa: PLR0912
         self, text: str, message: dict[str, Any], client: AsyncWebClient, context: AsyncBoltContext, logger: Logger
     ) -> MessageHandlerResponse | None:
         """
@@ -347,22 +349,21 @@ class EventDispatcher:
                         kwargs = match[0]
                 else:
                     kwargs = {}
-            else:
+            elif match := matcher.search(text):
                 # no named patterns, get a tuple of the matching element(s) and pass to
                 # listener as "match" or "matches"
-                if match := matcher.search(text):
-                    groups = match.groups()
-                    if len(groups) == 0:
-                        # no capture groups
-                        kwargs = {}
-                    elif len(groups) == 1:
-                        # one unnamed capture group
-                        kwargs = {"match": groups[0]}
-                    else:
-                        # multiple, unnamed capture groups
-                        kwargs = {"matches": groups}
-                else:
+                groups = match.groups()
+                if len(groups) == 0:
+                    # no capture groups
                     kwargs = {}
+                elif len(groups) == 1:
+                    # one unnamed capture group
+                    kwargs = {"match": groups[0]}
+                else:
+                    # multiple, unnamed capture groups
+                    kwargs = {"matches": groups}
+            else:
+                kwargs = {}
 
             if match:
                 # add the listener that had a matching regex, passing the named regex groups
@@ -376,7 +377,7 @@ class EventDispatcher:
 
         if not handlers:
             # nothing to do, no message handlers matched
-            return
+            return None
 
         message_responses: list[Message] = []
         file_responses: list[File] = []
@@ -399,7 +400,7 @@ class EventDispatcher:
                     message_responses.append(response)
                 elif isinstance(response, File):
                     file_responses.append(response)
-                elif response is None:  # noqa: RET507
+                elif response is None:
                     # A handler didn't have anything to return
                     continue
                 else:
@@ -440,10 +441,7 @@ class EventDispatcher:
 
         # All this code for a nice one-line log message!
         if logger.isEnabledFor(logging.INFO):
-            if message_response_count:
-                messages_log_msg = f"{Plural(message_response_count):N message/s}"
-            else:
-                messages_log_msg = "no messages"
+            messages_log_msg = f"{Plural(message_response_count):N message/s}" if message_response_count else "no messages"
 
             if files_response_count := len(file_responses):
                 files_log_msg = f"{Plural(files_response_count):N file/s} uploaded"
@@ -466,7 +464,7 @@ class EventDispatcher:
         # a single (possibly joined from multiple handlers) message, but possibly multiple files
         return MessageHandlerResponse(message=message_response, files=file_responses)
 
-    async def _post_new_message(
+    async def _post_new_message(  # noqa: PLR0913
         self,
         trigger_text: str,
         response: str | dict[str, Any] | Message,
@@ -491,7 +489,7 @@ class EventDispatcher:
         # (channel is honored if included, otherwise defaults to "self.channel")
 
         api_response = None
-        if isinstance(response, (str, dict)):
+        if isinstance(response, str | dict):
             api_call = "chat.postMessage"
             with start_span(op="slack-api", description=api_call):
                 api_response = await say(text=response, thread_ts=ts)
@@ -522,7 +520,7 @@ class EventDispatcher:
                 # call any message_callback handlers
                 await handler.function(api_call, trigger_text, api_response, context)
 
-    async def _upload_new_files(
+    async def _upload_new_files(  # noqa: PLR0913
         self,
         trigger_text: str,
         files: Sequence[File],
@@ -580,7 +578,7 @@ class EventDispatcher:
                 # call any message_callback handlers
                 await handler.function("files.upload_v2", trigger_text, api_response, context)
 
-    async def _update_old_message(
+    async def _update_old_message(  # noqa: PLR0913
         self,
         trigger_text: str,
         message: str | dict[str, Any] | Message,
@@ -652,23 +650,24 @@ class EventDispatcher:
             # TODO: add code to warn user (via ephemeral message) when they have an excessively long codeblocks/backticks
             extracted_text, codeblocks, backticks = self._preprocess_message_text(message.get("text"))
 
-            if extracted_text:
-                # found some text to look at, call the registered message handlers and see if we get anything we need post/upload
-                if response := await self._process_message_handlers(
+            # found some text to look at, call the registered message handlers and see if we get anything we need post/upload
+            if extracted_text and (
+                response := await self._process_message_handlers(
                     text=extracted_text, message=message, client=client, context=context, logger=logger
-                ):
-                    if response.message:
-                        # process the (possibly merged) message from the message handlers
-                        # include 'conditonal_thread_ts' in case response is 'str' (or 'dict' that doesn't include a 'ts')
-                        await self._post_new_message(
-                            extracted_text, response.message, context["conditional_thread_ts"], say, client, context, logger
-                        )
+                )
+            ):
+                if response.message:
+                    # process the (possibly merged) message from the message handlers
+                    # include 'conditonal_thread_ts' in case response is 'str' (or 'dict' that doesn't include a 'ts')
+                    await self._post_new_message(
+                        extracted_text, response.message, context["conditional_thread_ts"], say, client, context, logger
+                    )
 
-                    if response.files:
-                        # process the file(s) from the message handlers
-                        await self._upload_new_files(
-                            extracted_text, response.files, context["conditional_thread_ts"], client, context, logger
-                        )
+                if response.files:
+                    # process the file(s) from the message handlers
+                    await self._upload_new_files(
+                        extracted_text, response.files, context["conditional_thread_ts"], client, context, logger
+                    )
 
             txn.set_status("ok")
 
@@ -785,11 +784,10 @@ class EventDispatcher:
             else:
                 span.set_status("ok")
 
-        if api_response and api_response.get("ok"):
-            if (messages := api_response.get("messages")) is not None:
-                count = len(messages)
-                # account for conversatons.replies including the parent message
-                return count - 1 if thread_ts else count
+        if api_response and api_response.get("ok") and (messages := api_response.get("messages")) is not None:
+            count = len(messages)
+            # account for conversatons.replies including the parent message
+            return count - 1 if thread_ts else count
 
         return None
 
@@ -908,7 +906,6 @@ class EventDispatcher:
                         await ephemeral_notification(text, context=context, client=client)
 
             elif response:  # the user's edit would mean a brand-new bot message
-
                 message_count = await self._message_count_since_original(event, client)
                 if message_count is not None and message_count <= 3:
                     # there's been 3 or less messages added to the channel since the edit, so add the new reply/files
@@ -936,7 +933,7 @@ class EventDispatcher:
 
             txn.set_status("ok")
 
-    async def _dispatch_member_joined_channel(
+    async def _dispatch_member_joined_channel(  # noqa: PLR0913
         self, event: dict[str, Any], say: AsyncSay, client: AsyncWebClient, context: AsyncBoltContext, logger: Logger, ack: AsyncAck
     ) -> None:
         """

@@ -26,7 +26,7 @@ def import_settings(settings_module: str = "local.settings") -> tuple[CaseInsens
             # in case "local_settings.py" executed some code to retrieve stuff from a database
             # or token vault (for example) and then put them in the globals() namespace,only
             # use the things that are "standard" types and don't start with an underscore...
-            if not k.startswith("_") and isinstance(v := getattr(local_settings, k), (str, list, dict, int, tuple)):
+            if not k.startswith("_") and isinstance(v := getattr(local_settings, k), str | list | dict | int | tuple):
                 settings[k] = v
 
     for k, v in os.environ.items():

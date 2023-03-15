@@ -19,7 +19,7 @@ class RestrictChannelInvitationsPlugin(DoorBasePlugin):
         self.bot_admin_user_ids = self.settings.get("BOT_ADMIN_USER_IDS")
         if not self.bot_admin_user_ids:
             raise RuntimeError("No bot admins defined; disable plugin or add some in settings")
-        if not isinstance(self.bot_admin_user_ids, (tuple, list)):
+        if not isinstance(self.bot_admin_user_ids, tuple | list):
             raise RuntimeError("BOT_ADMIN_USER_IDS must be a tuple (or list)")
 
     @event("member_joined_channel")

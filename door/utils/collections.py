@@ -1,4 +1,5 @@
-from typing import Any, Callable, Iterable
+from typing import Any
+from collections.abc import Callable, Iterable
 
 
 def ensure_iterable(maybe_iterable: Any, desired_type: Callable[..., Iterable] | None = None) -> Iterable:
@@ -27,4 +28,4 @@ def isiter(obj: Any) -> bool:
     Returns (bool):
         True if the supplied object is an iterable, but not a string or bytes
     """
-    return isinstance(obj, Iterable) and not isinstance(obj, (str, bytes))
+    return isinstance(obj, Iterable) and not isinstance(obj, str | bytes)

@@ -277,11 +277,10 @@ class Slack(metaclass=Singleton):
         # strip off leading non-alphanumeric character
         channel_id = re.sub(r"^[^A-Z0-9]", "", channel_id)
 
-        if (channel := self._channels.get(channel_id)) and channel.ok:
-            # a valid channel is present in the channel cache
-            if not with_members or channel.members is not None:
-                # if caller doesn't need member count, OR the member list is populated, use cache
-                return channel
+        # if a valid channel is present in the channel cache, AND the caller doesn't need
+        # the member count, OR the member list is populated, just use cache
+        if (channel := self._channels.get(channel_id)) and channel.ok and (not with_members or channel.members is not None):
+            return channel
 
         # channel is not in the cache, or the member list needs updating
         return await self._update_channel(channel_id, get_members=with_members)

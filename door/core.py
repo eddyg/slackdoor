@@ -8,7 +8,8 @@ from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
 from dataclasses import replace
-from typing import Any, Awaitable, Callable
+from typing import Any
+from collections.abc import Awaitable, Callable
 
 from aiorun import run
 from asyncio.exceptions import CancelledError
@@ -175,10 +176,7 @@ class Door:
     def _register_plugin(self, plugin_class: str, cls_instance: DoorBasePlugin) -> None:
         methods = inspect.getmembers(cls_instance, predicate=inspect.ismethod)
 
-        if cls_instance.__doc__:
-            class_help = cls_instance.__doc__.splitlines()[0]
-        else:
-            class_help = plugin_class
+        class_help = cls_instance.__doc__.splitlines()[0] if cls_instance.__doc__ else plugin_class
         self._help[class_help] = self._help.get(class_help, {})
 
         for name, fn in methods:
@@ -187,7 +185,7 @@ class Door:
                 assert isinstance(fn.metadata, PluginMetadata)
                 self._register_plugin_listeners(plugin_class, fn.metadata, cls_instance, name, fn, class_help)
 
-    def _register_plugin_listeners(
+    def _register_plugin_listeners(  # noqa: PLR0913
         self,
         plugin_class: str,
         metadata: PluginMetadata,
@@ -246,9 +244,9 @@ class Door:
             details = doclines[1:]
             try:
                 # Trim off leading/trailing lines if they are empty
-                if details[0].strip() == "":
+                if not details[0].strip():
                     details = details[1:]
-                if details[-1].strip() == "":
+                if not details[-1].strip():
                     details = details[:-1]
 
                 desc_min_indent = find_shortest_indent(details)

@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 class File:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         filename: str,
         title: str,
