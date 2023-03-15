@@ -14,6 +14,7 @@ from sentry_sdk.integrations.excepthook import ExcepthookIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration, ignore_logger
 from sentry_sdk.integrations.threading import ThreadingIntegration
 from sentry_sdk.tracing import Span
+from sentry_sdk.utils import nanosecond_time
 
 # Sentry uses urllib3; don't want to see those log messages
 logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -76,11 +77,11 @@ def adjust_start(ts: str | int | float, transaction: Span) -> None:
     # datetime.fromtimestamp(ts, pytz.utc), so need to suppress DTZ004
     transaction.start_timestamp = datetime.utcfromtimestamp(ts)  # noqa: DTZ004
     # since the monotonic timer starts at 0 when the app starts, deal with older events
-    transaction._start_timestamp_monotonic = max(time.perf_counter() - (time.time() - ts), 0)
+    transaction._start_timestamp_monotonic_ns = max(nanosecond_time() - (time.time_ns() - int(ts * 1e9)), 0)
 
     with start_span(op="slack_event_ts_latency") as span:
         span.start_timestamp = transaction.start_timestamp
-        span._start_timestamp_monotonic = transaction._start_timestamp_monotonic
+        span._start_timestamp_monotonic_ns = transaction._start_timestamp_monotonic_ns
 
 
 # available "set_status" values
