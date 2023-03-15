@@ -163,10 +163,33 @@ class MultiMessage:
         self.ephemeral_texts: list[str] = []
         self.ephemeral_blocks: list[tuple[str | None, Sequence[Block]]] = []
         self.ephemeral_attachments: list[Sequence[Attachment]] = []
+        self.thread_ts: str | None = None
+        self.channel: str | None = None
+        self.user: str | None = None
 
-    def add(self, *, message: Message | None) -> None:
+    def add(self, *, message: Message | None) -> None:  # noqa: PLR0912
         if not message:
             return
+
+        # Log warnings about situations that should not happen
+        if message.thread_ts:
+            if self.thread_ts:
+                if message.thread_ts != self.thread_ts:
+                    logger.warning("MultiMessage.add() called with 'thread_ts' not matching previous 'thread_ts'")
+            else:
+                self.thread_ts = message.thread_ts
+        if message.channel:
+            if self.channel:
+                if message.channel != self.channel:
+                    logger.warning("MultiMessage.add() called with 'channel' not matching previous 'channel'")
+            else:
+                self.channel = message.channel
+        if message.user:
+            if self.user:
+                if message.user != self.user:
+                    logger.warning("MultiMessage.add() called with 'user' not matching previous 'user'")
+            else:
+                self.user = message.user
 
         if message.ephemeral:
             if message.attachments:
@@ -200,7 +223,7 @@ class MultiMessage:
         attachments_in: list[Sequence[Attachment]],
         divide_blocks: bool | None,
     ) -> tuple[str | None, Sequence[Block], Sequence[Attachment]]:
-        # FIXME: try to de-dupe things?
+        # FIXME: try to de-dupe things? (probably easier to leave that up to the plugins...)
 
         blocks: list[Block] = []
         attachments: list[Attachment] = []
@@ -244,7 +267,27 @@ class MultiMessage:
         texts, blocks, attachments = self._join(self.texts, self.blocks, self.attachments, divide_blocks)
 
         if texts or blocks or attachments:
-            return Message(text=texts, blocks=blocks, attachments=attachments, **kwargs)
+            message = Message(text=texts, blocks=blocks, attachments=attachments, **kwargs)
+
+            if message.thread_ts:  # thread_ts was explicitly set via kwargs
+                if self.thread_ts and message.thread_ts != self.thread_ts:
+                    logger.warning("MultiMessage.join: 'thread_ts' kwarg does not match existing thread_ts")
+            elif self.thread_ts:
+                message.thread_ts = self.thread_ts
+
+            if message.user:  # user was explicitly set via kwargs
+                if self.user and message.user != self.user:
+                    logger.warning("MultiMessage.join: 'user' kwarg does not match existing user")
+            elif self.user:
+                message.user = self.user
+
+            if message.channel:  # channel was explicitly set via kwargs
+                if self.channel and message.channel != self.channel:
+                    logger.warning("MultiMessage.join: 'channel' kwarg does not match existing channel")
+            elif self.channel:
+                message.channel = self.channel
+
+            return message
 
         return None
 
@@ -254,6 +297,27 @@ class MultiMessage:
         )
 
         if texts or blocks or attachments:
-            return Message(text=texts, blocks=blocks, attachments=attachments, ephemeral=True, **kwargs)
+            # FIXME: do we need to be concerned about a user passing `ephemeral` in kwargs?
+            message = Message(text=texts, blocks=blocks, attachments=attachments, ephemeral=True, **kwargs)
+
+            if message.thread_ts:  # thread_ts was explicitly set via kwargs
+                if self.thread_ts and message.thread_ts != self.thread_ts:
+                    logger.warning("MultiMessage.join_ephemeral: 'thread_ts' kwarg does not match existing thread_ts")
+            elif self.thread_ts:
+                message.thread_ts = self.thread_ts
+
+            if message.user:  # user was explicitly set via kwargs
+                if self.user and message.user != self.user:
+                    logger.warning("MultiMessage.join_ephemeral: 'user' kwarg does not match existing user")
+            elif self.user:
+                message.user = self.user
+
+            if message.channel:  # channel was explicitly set via kwargs
+                if self.channel and message.channel != self.channel:
+                    logger.warning("MultiMessage.join_ephemeral: 'channel' kwarg does not match existing channel")
+            elif self.channel:
+                message.channel = self.channel
+
+            return message
 
         return None
