@@ -110,13 +110,15 @@ def fix_timestamp(timestamp: str) -> str:
     return re.sub(r"[+-](\d\d)(\d\d)$", r"+\1:\2", timestamp.replace("Z", "+00:00"))
 
 
-def strip_mrkdwn(text: str) -> str:
+def strip_mrkdwn(text: str, *, strip_urls: bool = True, strip_groups: bool = True) -> str:
     """Strip Slack-flavored 'mrkdwn' formatting"""
     text = re.sub(r"\*_((?:\S)(?:.*?))_\*", r"\1", text)  # strip *_..._*
     text = re.sub(r"_\*((?:\S)(?:.*?))\*_", r"\1", text)  # strip *_..._*
     text = re.sub(r"([*_])((?:\S)(?:.*?))(?:\1)", r"\2", text)  # strip *...* or _..._
-    text = re.sub(r"<(?!!)([^>]+?)(?:\|[^>]+?)?>", r"\1", text)  # strip URLs
-    text = re.sub(r"(?:<![^>]+?\|)([^>]+?)(?:>)", r"\1", text)  # strip Slack ! links (<!subteam^SXYZ|@groupname>)
+    if strip_urls:
+        text = re.sub(r"<(?!!)([^>]+?)(?:\|[^>]+?)?>", r"\1", text)  # strip URLs
+    if strip_groups:
+        text = re.sub(r"(?:<![^>]+?\|)([^>]+?)(?:>)", r"\1", text)  # strip Slack ! links (<!subteam^SXYZ|@groupname>)
     return text.replace("\n", " • ")
 
 
