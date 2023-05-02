@@ -24,7 +24,7 @@ from door.models.files.file import File
 from door.models.messages.message import Message, MultiMessage
 from door.sentry import adjust_start
 from door.slack import Slack
-from door.utils import Plural, partial_mask
+from door.utils import Plural, partial_mask, strip_mrkdwn
 
 from sentry_sdk import start_transaction, start_span, set_user, set_tag, capture_exception
 
@@ -318,6 +318,10 @@ class EventDispatcher:
         # Slack encodes &, < and > because they are used internally... which means we can't match on "&"
         # FIXME: what could go wrong by doing this?
         text = text.replace("&amp;", "&")
+
+        # Remove bold/italic formatting, but don't strip URLs (or groups) because some plugins
+        # may need to detect whether a "trigger" occurs inside a URL to be able to ignore it
+        text = strip_mrkdwn(text, strip_urls=False, strip_groups=False)
 
         return text, codeblocks, backticks
 
