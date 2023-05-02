@@ -106,8 +106,8 @@ def deduplicate(items: Iterable) -> list:
 
 
 def fix_timestamp(timestamp: str) -> str:
-    # convert Z to +00:00 (RFC 3339 format), or change +0000 to +00:00, so datetime.fromisoformat works
-    return re.sub(r"\+(\d\d)(\d\d)$", r"+\1:\2", timestamp.replace("Z", "+00:00"))
+    # convert Z to +00:00 (RFC 3339 format), or change ±0000 to ±00:00, so datetime.fromisoformat works
+    return re.sub(r"[+-](\d\d)(\d\d)$", r"+\1:\2", timestamp.replace("Z", "+00:00"))
 
 
 def strip_mrkdwn(text: str) -> str:
