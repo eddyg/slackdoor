@@ -82,7 +82,7 @@ class EventDispatcher:
         self.app.middleware(self._add_door_context)
 
         # Register our special dispatchers with Bolt for new, deleted and changed  messages
-        self.app.event({"type": "message", "subtype": (None, "me_message")}, middleware=[self._bot_mentioned])(
+        self.app.event({"type": "message", "subtype": (None, "me_message", "thread_broadcast")}, middleware=[self._bot_mentioned])(
             self._dispatch_message
         )
         self.app.event({"type": "message", "subtype": "message_deleted"})(self._dispatch_message_deleted)
