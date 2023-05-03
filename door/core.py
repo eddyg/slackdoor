@@ -8,7 +8,7 @@ from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
 from dataclasses import replace
-from typing import Any
+from typing import Any, cast
 from collections.abc import Awaitable, Callable
 
 from aiorun import run
@@ -182,8 +182,8 @@ class Door:
         for name, fn in methods:
             # check if the method is Door-decorated
             if hasattr(fn, "metadata"):
-                assert isinstance(fn.metadata, PluginMetadata)
-                self._register_plugin_listeners(plugin_class, fn.metadata, cls_instance, name, fn, class_help)
+                # because 'metadata' is added via a decorator, the static type checker needs the cast to Any
+                self._register_plugin_listeners(plugin_class, cast(Any, fn).metadata, cls_instance, name, fn, class_help)
 
     def _register_plugin_listeners(  # noqa: PLR0913
         self,
