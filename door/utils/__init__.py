@@ -87,7 +87,7 @@ def relative_date(the_time: int | float | str | datetime) -> str:
         elif second_diff < 300:
             second_diff //= 60
             r = f"about {second_diff} minute{'s'[:second_diff^1]}"
-        elif second_diff < 3600:
+        elif second_diff < 5400:
             second_diff //= 60
             r = f"about {second_diff + (5 - second_diff) % 5} minutes"
         else:
